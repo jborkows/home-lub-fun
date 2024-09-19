@@ -7,6 +7,7 @@ service:
   loadBalancerIP:  10.72.7.123
 
 
+
 ports:
   web:
     expose: 
@@ -39,21 +40,18 @@ providers:
   kubernetesCRD: {}
   kubernetesIngress: {}
 
-certificatesResolvers:
-  letsencrypt:
-    acme:
-      email: "jacek.borkowskiit@gmail.com"
-      storage: "/data/acme.json"
-      dnsChallenge:
-        provider: cloudflare
-        delayBeforeCheck: 0
-        resolvers:
-          - "1.1.1.1:53" # Cloudflare DNS resolver
-
-env:
-  - name: DNS_API_TOKEN
-    valueFrom:
-      secretKeyRef:
-        name: dns-api-token
-        key: DNS_API_TOKEN
-
+logs:
+  general:
+    level: DEBUG
+    
+tlsStore:
+  default:
+    defaultCertificate:
+      secretName: wildcard-borkowskij-com-tls 
+additionalArguments:
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+  - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+  - "--entrypoints.web.http.redirections.entryPoint.permanent=true"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.websecure.http.tls=true"

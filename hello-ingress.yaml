@@ -3,8 +3,6 @@ kind: Ingress
 metadata:
   name: myapp-ingress
   namespace: default
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
 spec:
   ingressClassName: traefik
   rules:
@@ -20,6 +18,6 @@ spec:
               number: 80
   tls:
   - hosts:
-    - myhomeapp.example.com
-    secretName: myhomeapp-cert
+    - hello.borkowskij.com
+    secretName: tls-secret
 

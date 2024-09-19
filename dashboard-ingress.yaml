@@ -1,0 +1,51 @@
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: insecure-dashboard
+  namespace: kube-system
+spec:
+  insecureSkipVerify: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dashboard-ingressroute
+  namespace: kube-system
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`dashboard.borkowskij.com`)
+      kind: Rule
+      services:
+        - name: kubernetes-dashboard
+          port: 443
+          serversTransport: insecure-dashboard
+
+# apiVersion: networking.k8s.io/v1  
+# kind: Ingress
+# metadata:
+#   name: dashboard-ingress
+#   namespace: kube-system
+#   annotations:
+#     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+#     traefik.ingress.kubernetes.io/router.tls: "true"
+#     traefik.ingress.kubernetes.io/service.serversTransport: insecure-dashboard
+# spec:
+#   ingressClassName: traefik
+#   rules:
+#   - host: dashboard.borkowskij.com
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: kubernetes-dashboard
+#             port:
+#               number: 443
+#   tls:
+#   - hosts:
+#     - dashboard.borkowskij.com
+#     secretName: tls-secret
+#
