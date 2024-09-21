@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: diun
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: diun
+  name: diun
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: diun
+  namespace: diun
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - watch
+      - list
+      
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: diun
+  namespace: diun
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: diun
+subjects:
+  - kind: ServiceAccount
+    name: diun
+    namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: diun-config
+  namespace: diun
+data:
+  diuna.yml: |
+    notif:
+      script:
+        cmd: /etc/diun/notify.sh
+  notify.sh: |
+          #!/bin/bash
+          set -e
+
+          # Define the log file path
+          LOG_FILE="/data/updated_images.log"  # Adjust the path as needed
+
+          # Create the log directory if it doesn't exist
+          mkdir -p /var/log/diun
+
+          # Get the image name and tag from environment variables
+          IMAGE_NAME="$DIUN_IMAGE"
+          IMAGE_TAG="$DIUN_TAG"
+
+          # Log the updated image with a timestamp
+          echo "Updated Image: ${IMAGE_NAME}:${IMAGE_TAG} at $(date)" >> "$LOG_FILE"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: diun
+  name: diun
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diun
+  template:
+    metadata:
+      labels:
+        app: diun
+      annotations:
+        diun.enable: "true"
+    spec:
+      serviceAccountName: diun
+      containers:
+        - name: diun
+          image: crazymax/diun:latest
+          imagePullPolicy: Always
+          args: ["serve"]
+
+          env:
+            - name: TZ
+              value: "Europe/Paris"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: LOG_JSON
+              value: "false"
+            - name: DIUN_WATCH_WORKERS
+              value: "20"
+            - name: DIUN_WATCH_SCHEDULE
+              value: "*/5 * * * *"
+            - name: DIUN_WATCH_JITTER
+              value: "30s"
+            - name: DIUN_PROVIDERS_KUBERNETES
+              value: "true"
+            - name: DIUN_CONFIG
+              value: "/etc/diun/diuna.yml" 
+          volumeMounts:
+            - mountPath: "/data"
+              name: "data"
+            - name: config-volume
+              mountPath: /etc/diun
+      restartPolicy: Always
+      volumes:
+        # Set up a data directory for diun
+        # For production usage, you should consider using PV/PVC instead(or simply using storage like NAS)
+        # For more details, please see https://kubernetes.io/docs/concepts/storage/volumes/
+        - name: "data"
+          hostPath:
+            path: "/data/diun"
+            type: Directory
+        - name: config-volume
+          configMap:
+            name: diun-config
+
