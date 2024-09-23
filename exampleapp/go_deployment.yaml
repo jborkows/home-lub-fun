@@ -85,8 +85,10 @@ kind: Ingress
 metadata:
   name: myapp-ingress
   namespace: examplego
+  annotations:
+    cert-manager.io/cluster-issuer: "cloudflare"  # Reference the ClusterIssuer
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
-  ingressClassName: traefik
   rules:
   - host: examplego.borkowskij.com
     http:
@@ -101,6 +103,6 @@ spec:
   tls:
   - hosts:
     - examplego.borkowskij.com
-    secretName: tls-secret
+    secretName: examplego-borkowskij-com-tls
 
 

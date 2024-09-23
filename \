@@ -1,0 +1,65 @@
+# traefik-values.yaml
+deployment:
+  enabled: true
+
+service:
+  type: LoadBalancer
+  loadBalancerIP:  10.72.7.123
+  single: false 
+
+
+ports:
+  web:
+    expose: 
+      default: true
+
+    port: 8000
+    exposedPort: 80
+    protocol: TCP
+    # The new expose format expects an object with additional fields
+    exposed: true
+    entryPoints:
+      - web
+
+  websecure:
+    expose: 
+      default: true
+    port: 8443
+    exposedPort: 443
+    exposed: true
+    entryPoints:
+      - websecure  
+  h3:
+    expose: 
+      default: true
+    port: 8444  # Non-privileged internal port for HTTP/3
+    exposedPort: 443  # External port for HTTP/3 (QUIC/UDP)
+    protocol: UDP   # HTTP/3 uses UDP
+    exposed: true
+    http3:
+      enabled: true
+    entryPoints:
+      - h3
+ingressRoute:
+  dashboard:
+    enabled: false # Disable the dashboard to avoid exposing it
+
+providers:
+  kubernetesCRD: {}
+  kubernetesIngress: {}
+
+logs:
+  general:
+    level: DEBUG
+    
+tlsStore:
+  default:
+    defaultCertificate:
+      secretName: wildcard-borkowskij-com-tls 
+additionalArguments:
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+  - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+  - "--entrypoints.web.http.redirections.entryPoint.permanent=true"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.websecure.http.tls=true"

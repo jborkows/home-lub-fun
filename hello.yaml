@@ -27,3 +27,28 @@ spec:
     - port: 80
   selector:
     app: nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp-ingress
+  namespace: default
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: hello.borkowskij.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-project
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - hello.borkowskij.com
+    secretName: tls-secret
+
+
